@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>encoder_odometry</name>
+  <version>0.1.0</version>
+  <description>Encoder-based odometry node for differential drive robot.</description>
+  <maintainer email="your_email@example.com">Your Name</maintainer>
+  <license>MIT</license>
+
+  <!-- ビルドツール -->
+  <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <!-- 実行時依存関係 -->
+  <exec_depend>rclpy</exec_depend>
+  <exec_depend>geometry_msgs</exec_depend>
+  <exec_depend>nav_msgs</exec_depend>
+  <exec_depend>tf2_ros</exec_depend>
+
+  <!-- Pythonモジュール（setup.pyを使う前提） -->
+  <exec_depend>ament_python</exec_depend>
+
+  <export>
+    <build_type>ament_python</build_type>
+  </export>
+</package>

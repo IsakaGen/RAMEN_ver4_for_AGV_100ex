@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>right_hand_controller</name>
+  <version>0.0.1</version>
+  <description>AGV の右手法制御ノード</description>
+  <maintainer email="7521059@ed.tus.ac.jp">Shota Simazaki</maintainer>
+  <license>MIT</license>
+
+  <buildtool_depend>ament_python</buildtool_depend>
+
+  <exec_depend>rclpy</exec_depend>
+  <exec_depend>sensor_msgs</exec_depend>
+  <exec_depend>geometry_msgs</exec_depend>
+  <exec_depend>nav_msgs</exec_depend>
+
+  <export>
+    <build_type>ament_python</build_type>
+  </export>
+</package>

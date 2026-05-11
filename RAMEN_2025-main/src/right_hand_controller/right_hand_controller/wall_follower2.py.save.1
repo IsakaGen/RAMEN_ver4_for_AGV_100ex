@@ -1,0 +1,239 @@
+import rclpy
+from rclpy.node import Node
+from geometry_msgs.msg import Twist
+from sensor_msgs.msg import LaserScan
+import numpy as np
+import math
+import random
+
+
+class WallFollower(Node):
+    def __init__(self):
+        super().__init__('wall_follower')
+        self.segment = 1  # 1〜4：現在の直線区間番号
+        self.start_time = None
+        self.target_distance = 0.35
+        self.prev_wall_angle = 0.0
+        self.prev2_error = 0.0   # 2ステップ前の誤差
+        self.error_hist = [0.0, 0.0, 0.0, 0.0]  # 4ステップ分（古→新）
+        self.Kp = 0.2
+        self.Kd = 0.1
+        self.angle_gain = 0.3
+        self.wall_angle_d_gain = 0.15
+        self.prev_error = 0.0
+        self.cmd_pub = self.create_publisher(Twist, '/cmd_vel', 10)
+        self.scan_sub = self.create_subscription(LaserScan, 'scan', self.scan_callback, 10)
+        self.mode = "FOLLOWING"
+        self.turn_start_time = 0.0
+
+    def scan_callback(self, scan):
+          # === 処理周期の計算 ===
+        self.get_logger().info(f"Now Segment = {self.segment}")
+        now = self.get_clock().now()
+        if not hasattr(self, 'prev_time'):
+            self.prev_time = now
+            return
+
+        dt = (now - self.prev_time).nanoseconds * 1e-9  # 秒に変換
+        self.prev_time = now
+        #self.get_logger().info(f"[周期] dt = {dt:.4f} 秒")
+
+        ranges = np.array(scan.ranges)
+        angle_min = scan.angle_min
+        angle_inc = scan.angle_increment
+
+        # 壁検出用RANSAC（右側）
+        start_deg = 60
+        end_deg = 120
+        start_idx = int((math.radians(start_deg) - angle_min) / angle_inc)
+        end_idx = int((math.radians(end_deg) - angle_min) / angle_inc)
+
+        points = []
+        for i in range(start_idx, end_idx):
+            if i < 0 or i >= len(ranges):
+                continue
+            r = ranges[i]
+            if not math.isfinite(r):
+                continue
+            angle = angle_min + i * angle_inc
+            x = r * math.cos(angle)
+            y = r * math.sin(angle)
+            points.append([x, y])
+
+        if len(points) < 2:
+            self.get_logger().info("Not enough points for RANSAC")
+            return
+
+        # RANSAC直線フィッティング
+        best_inliers = []
+        best_model = (0, 0, 0)
+
+        for _ in range(150):
+            p1, p2 = random.sample(points, 2)
+            a = p2[1] - p1[1]
+            b = p1[0] - p2[0]
+            c = -a * p1[0] - b * p1[1]
+            norm = math.hypot(a, b)
+            if norm == 0:
+                continue
+            inliers = []
+            for x, y in points:
+                dist = abs(a * x + b * y + c) / norm
+                if dist < 0.08:
+                    inliers.append((x, y))
+            if len(inliers) > len(best_inliers):
+                best_inliers = inliers
+                best_model = (a, b, c)
+
+        if not best_inliers:
+            self.get_logger().info("No line found")
+            return
+
+        # 壁との距離と角度
+        a, b, c = best_model
+        distance = abs(c) / math.hypot(a, b)
+        error = distance - self.target_distance
+        d_error = error - self.prev_error
+        dd_error = d_error - (self.prev_error - self.prev2_error)
+
+        # 誤差履歴更新（古い順にずらす）
+        self.error_hist = self.error_hist[1:] + [error]
+
+        # 差分（1ステップ目と2ステップ目）
+        d1 = self.error_hist[3] - self.error_hist[2]
+        d2 = self.error_hist[2] - self.error_hist[1]
+        dd1 = d1 - d2
+
+        # 2ステップ先を予測（t+2 予測: y + 2Δy + 2Δ²y）
+        error_predict = self.error_hist[3] + 2 * d1 + 2 * dd1
+
+        inliers = np.array(best_inliers)
+        x = inliers[:, 0]
+        y = inliers[:, 1]
+        A = np.vstack([x, np.ones(len(x))]).T
+        m, _ = np.linalg.lstsq(A, y, rcond=None)[0]
+        wall_angle = math.atan(m)
+
+        # 平滑化
+        alpha = 0.3
+        wall_angle = alpha * wall_angle + (1 - alpha) * self.prev_wall_angle
+        d_wall_angle = wall_angle - self.prev_wall_angle
+        self.prev_wall_angle = wall_angle
+
+        # Lidar情報保持
+        self.wall_angle = wall_angle
+        self.laser_ranges = ranges
+        self.lidar_angle_min = angle_min
+        self.lidar_angle_increment = angle_inc
+
+        twist = Twist()
+
+        # === コーナー検出 ===
+        if self.mode == "FOLLOWING":
+            distance_along_wall = float('inf')  # ← どの条件にも入らなかった場合用
+            wall_dir_index = int(self.wall_angle / self.lidar_angle_increment)
+            if 0 <= wall_dir_index :
+                distance_along_wall = self.laser_ranges[wall_dir_index]
+
+            elif wall_dir_index < 0 :
+                distance_along_wall = self.laser_ranges[1800 + wall_dir_index]
+
+            #self.get_logger().info(f" wall_angle={math.degrees(self.wall_angle):.1f}°, c_distance={distance_along_wall:.2f} m ")
+            #self.get_logger().info(f" wall_dir_index={ wall_dir_index:.1f},len(self.laser_ranges)={len(self.laser_ranges):.1f}")
+            if distance_along_wall <= 1.1 and (self.segment == 1 or self.segment == 2 or self.segment == 3) :
+                self.get_logger().info(f"[CORNER] wall_angle={math.degrees(self.wall_angle):.1f}°, c_distance={distance_along_wall:.2f} m → Turning!")
+                self.mode = "TURNING"
+                self.turn_start_time = self.get_clock().now()
+ 
+            if distance_along_wall <= 1.22  and self.segment == 4 :
+                self.get_logger().info(f"[CORNER] wall_angle={math.degrees(self.wall_angle):.1f}°, c_distance={distance_along_wall:.2f} m → Turning!")
+                self.mode = "TURNING"
+                self.turn_start_time = self.get_clock().now()
+
+        # === TURNING ===
+        if self.mode == "TURNING":
+            if self.laser_ranges is None or len(self.laser_ranges) == 0:
+                self.get_logger().warn("Laser data not ready.")
+                return
+
+            front_idx = 0
+            front_distance = self.laser_ranges[front_idx]
+
+            now = self.get_clock().now()
+            elapsed_turn = (now - self.turn_start_time).nanoseconds * 1e-9
+
+            if elapsed_turn < 0.1:
+                twist.linear.x = 0.0
+                twist.angular.z = 0.35
+                self.get_logger().info("Turning !!!")
+
+            else:
+                if front_distance > 1.35:
+                    self.start_time = now
+                    self.mode = "FOLLOWING"
+                    self.segment += 1
+                    if self.segment > 4:
+                        self.segment = 1
+                    self.get_logger().info(f"[TURN END] segment → {self.segment}")
+
+                else:
+                    self.turn_start_time = now  # 継続ターン
+                    twist.linear.x = 0.1
+                    twist.angular.z = 0.25
+                    self.get_logger().info("Still blocked. Keep turning...")
+
+        # === FOLLOWING ===
+        if self.mode == "FOLLOWING":
+            if self.start_time is None:
+                self.start_time = self.get_clock().now()
+            now = self.get_clock().now()
+            elapsed = (now - self.start_time).nanoseconds * 1e-9
+
+            if elapsed < 1.5:
+                twist.linear.x = 0.15
+                twist.angular.z =  - self.Kp * error_predict \
+                  + self.angle_gain * wall_angle \
+                  + self.wall_angle_d_gain * d_wall_angle
+
+            elif elapsed < 3.0:
+                twist.linear.x = 0.20
+                twist.angular.z =  - self.Kp * error_predict \
+                  + self.angle_gain * wall_angle \
+                  + self.wall_angle_d_gain * d_wall_angle
+            else:
+                if self.segment == 1:
+                    self.Kp= 0.4 #0.23
+                    self.Kd= 0.12 #0.1
+                    self.angle_gain= 0.32 #0.25
+                    self.wall_angle_d_gain= 0.3 #0.25
+                    twist.linear.x = 0.25
+                    self.get_logger().info('Segment1 folllowing!!!')
+                else:
+                    self.Kp=0.25
+                    self.Kd=0.12
+                    self.angle_gain=0.25
+                    self.wall_angle_d_gain=0.25
+                    twist.linear.x = 0.15
+                    self.get_logger().info('Segment2~4 folllowing!!!')
+                twist.angular.z = -self.Kp * error_predict \
+                  + self.angle_gain * wall_angle \
+                  + self.wall_angle_d_gain * d_wall_angle
+
+        # === ログ & 実行 ===
+        front_idx = 0
+        front_distance = self.laser_ranges[front_idx]
+
+        self.get_logger().info(
+            f"wall_angle={math.degrees(wall_angle):.1f}°, -Kp*e={-self.Kp*error:.3f}, "
+            f"angle_gain*wall={self.angle_gain * wall_angle:.3f}, wall_angle_d={d_wall_angle:.3f},predict={error_predict:.3f}, "
+            f"distance_to_wall={distance:.3f}, front={front_distance:.3f}, linear.x={twist.linear.x:.2f}, angular.z={twist.angular.z:.2f}"
+        )
+
+        self.cmd_pub.publish(twist)
+
+
+def main(args=None):
+    rclpy.init(args=args)
+    node = WallFollower()
+    rclpy.spin(node)
+    rclpy.shutdown()

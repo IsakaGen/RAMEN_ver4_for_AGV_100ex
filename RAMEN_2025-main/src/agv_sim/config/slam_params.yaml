@@ -1,0 +1,43 @@
+# slam_params.yaml
+
+# slam_toolboxノードに対するパラメータ設定
+slam_toolbox:
+  ros__parameters:
+    # ======== TFフレーム設定 ========
+    # マップの基準となるフレーム名
+    map_frame: map
+    # ロボットのベース（基準）となるフレーム名
+    base_frame: base_link
+    # オドメトリのフレーム名（車輪の回転などから計算される移動情報）
+    odom_frame: odom
+
+    # ======== トピック設定 ========
+    # サブスクライブするLiDARのスキャンデータのトピック名
+    scan_topic: /scan
+
+    # ======== SLAMコア設定 ========
+    # スキャンマッチングを有効にするか
+    use_scan_matching: true
+    # 地図の保存を有効にするか
+    use_map_saving: true
+    # 地図を更新する間隔（秒）
+    map_update_interval: 5.0
+    # スキャンデータを処理する最大/最小距離 (m)
+    # 必要に応じてコメントを解除して調整
+    # min_scan_range: 0.15
+    # max_scan_range: 12.0
+
+    # ======== マッチャー（スキャン照合）の詳細設定 ========
+    # スキャンを探索する最大距離 (m)
+    search_range: 0.8
+    # 角度方向の探索範囲 (rad)
+    angle_range: 0.5
+    
+    # ======== その他 ========
+    # 使用するソルバープラグイン
+    solver_plugin: "solver_plugins::CeresSolver"
+    # Ceres Scan Matcher の設定
+    ceres_scan_matcher:
+      use_nonmonotonic_steps: false
+      max_num_iterations: 50
+      num_threads: 1

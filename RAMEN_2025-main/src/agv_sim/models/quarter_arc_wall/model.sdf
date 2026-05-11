@@ -1,0 +1,83 @@
+<sdf version="1.6">
+  <model name="quarter_arc_wall">
+    <static>true</static>
+
+    🔽ここに貼る
+    <link name="arc_link">
+      
+
+  <!-- 正確に接続する 1/4円弧 -->
+  <!-- 7ピース、弧長 = 板長 -->
+  <visual name="arc_piece_0">
+    <pose>0.000000 -0.300000 0.2 0 0 0</pose>
+    <geometry><box><size>0.0785 0.01 0.4</size></box></geometry>
+    <material><ambient>1 0 0 1</ambient></material>
+  </visual>
+  <collision name="arc_piece_0">
+    <pose>0.000000 -0.300000 0.2 0 0 0</pose>
+    <geometry><box><size>0.0785 0.01 0.4</size></box></geometry>
+  </collision>
+
+  <visual name="arc_piece_1">
+    <pose>0.077645 -0.290211 0.2 0 0 0.261799</pose>
+    <geometry><box><size>0.0785 0.01 0.4</size></box></geometry>
+    <material><ambient>1 0 0 1</ambient></material>
+  </visual>
+  <collision name="arc_piece_1">
+    <pose>0.077645 -0.290211 0.2 0 0 0.261799</pose>
+    <geometry><box><size>0.0785 0.01 0.4</size></box></geometry>
+  </collision>
+
+  <visual name="arc_piece_2">
+    <pose>0.150000 -0.260422 0.2 0 0 0.523599</pose>
+    <geometry><box><size>0.0785 0.01 0.4</size></box></geometry>
+    <material><ambient>1 0 0 1</ambient></material>
+  </visual>
+  <collision name="arc_piece_2">
+    <pose>0.150000 -0.260422 0.2 0 0 0.523599</pose>
+    <geometry><box><size>0.0785 0.01 0.4</size></box></geometry>
+  </collision>
+
+  <visual name="arc_piece_3">
+    <pose>0.212132 -0.212132 0.2 0 0 0.785398</pose>
+    <geometry><box><size>0.0785 0.01 0.4</size></box></geometry>
+    <material><ambient>1 0 0 1</ambient></material>
+  </visual>
+  <collision name="arc_piece_3">
+    <pose>0.212132 -0.212132 0.2 0 0 0.785398</pose>
+    <geometry><box><size>0.0785 0.01 0.4</size></box></geometry>
+  </collision>
+
+  <visual name="arc_piece_4">
+    <pose>0.260422 -0.150000 0.2 0 0 1.047198</pose>
+    <geometry><box><size>0.0785 0.01 0.4</size></box></geometry>
+    <material><ambient>1 0 0 1</ambient></material>
+  </visual>
+  <collision name="arc_piece_4">
+    <pose>0.260422 -0.150000 0.2 0 0 1.047198</pose>
+    <geometry><box><size>0.0785 0.01 0.4</size></box></geometry>
+  </collision>
+
+  <visual name="arc_piece_5">
+    <pose>0.290211 -0.077645 0.2 0 0 1.308997</pose>
+    <geometry><box><size>0.0785 0.01 0.4</size></box></geometry>
+    <material><ambient>1 0 0 1</ambient></material>
+  </visual>
+  <collision name="arc_piece_5">
+    <pose>0.290211 -0.077645 0.2 0 0 1.308997</pose>
+    <geometry><box><size>0.0785 0.01 0.4</size></box></geometry>
+  </collision>
+
+  <visual name="arc_piece_6">
+    <pose>0.300000 0.000000 0.2 0 0 1.570796</pose>
+    <geometry><box><size>0.0785 0.01 0.4</size></box></geometry>
+    <material><ambient>1 0 0 1</ambient></material>
+  </visual>
+  <collision name="arc_piece_6">
+    <pose>0.300000 0.000000 0.2 0 0 1.570796</pose>
+    <geometry><box><size>0.0785 0.01 0.4</size></box></geometry>
+  </collision>
+</link>
+
+</model>
+</sdf>

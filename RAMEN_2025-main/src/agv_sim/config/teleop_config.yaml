@@ -1,0 +1,7 @@
+teleop_twist_joy:
+  ros__parameters:
+    axis_linear: 1       # 左スティック上下
+    scale_linear: 0.5
+    axis_angular: 0      # 左スティック左右
+    scale_angular: 1.5
+    enable_button: 0     # Aボタン（または任意の有効化ボタン）

@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>agv_sim</name>
+  <version>0.0.1</version>
+  <description>Gazebo 上で LiDAR 付き AGV を右手法で自律走行させるシミュレーションパッケージ</description>
+  <maintainer email="7521059@ed.tus.ac.jp">Simazaki</maintainer>
+  <license>MIT</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <!-- 実行時に必要な依存 -->
+  <depend>rclpy</depend>
+  <depend>sensor_msgs</depend>
+  <depend>geometry_msgs</depend>
+  <depend>launch</depend>
+  <depend>launch_ros</depend>
+  <depend>robot_state_publisher</depend>  <!-- URDF を publish するなら必須 -->
+
+  <!-- テスト用の依存 (必要なければ削除して OK) -->
+  <test_depend>ament_lint_auto</test_depend>
+  <test_depend>ament_lint_common</test_depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>
