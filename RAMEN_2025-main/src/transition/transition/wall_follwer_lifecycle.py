@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 # wall_follower_lifecycle.py
+# 最初のカーブを曲がる距離を変更しました．209行目
+
 
 import time
 import rclpy
@@ -205,7 +207,7 @@ class wallfollwerModeNode(Node):
 
             #self.get_logger().info(f" wall_angle={math.degrees(self.wall_angle):.1f}°, c_distance={distance_along_wall:.2f} m ")
             #self.get_logger().info(f" wall_dir_index={ wall_dir_index:.1f},len(self.laser_ranges)={len(self.laser_ranges):.1f}")
-            if distance_along_wall <= 1.2  and self.segment == 1 :
+            if distance_along_wall <= 1.2  and self.segment == 1 : ######ここが，最初のカーブをする距離を決めるところ．
                 #self.get_logger().info(f"[CORNER] wall_angle={math.degrees(self.wall_angle):.1f}°, c_distance={distance_along_wall:.2f} m → Turning!")
                 self.mode = "TURNING"
                 self.turn_start_time = self.get_clock().now()
